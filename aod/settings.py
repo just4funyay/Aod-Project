@@ -79,9 +79,9 @@ WSGI_APPLICATION = "aod.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'aod-project',
+        'NAME': 'DATABASENAME',
         'USER': 'postgres',
-        'PASSWORD': 'mandaika',
+        'PASSWORD': 'PASSWORD',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -140,11 +140,10 @@ REST_FRAMEWORK = {
 
 import os
 
-GDAL_LIBRARY_PATH = r"C:\OSGeo4W\bin\gdal310.dll"  # Sesuaikan nama file GDAL Anda
+GDAL_LIBRARY_PATH = r"C:\OSGeo4W\bin\gdal310.dll"  
 GEOS_LIBRARY_PATH = r"C:\OSGeo4W\bin\geos_c.dll"
 PROJ_LIBRARY_PATH = r"C:\OSGeo4W\bin\proj_9.dll" 
 
-import os
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'

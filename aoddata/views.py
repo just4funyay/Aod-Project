@@ -32,7 +32,6 @@ class InputDatabase(APIView):
         try:
             geoTIFF_files = convert_to_geoTiFF_input_data(nc_file_path, geotiff_file_path)
             print(geoTIFF_files)
-            # Menggunakan Raster untuk menyimpan GeoTIFF ke database
             raster = GDALRaster(geotiff_file_path, write=True)
             raster_data = RasterData(raster=raster)
             return Response(
@@ -45,39 +44,5 @@ class InputDatabase(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class GetRasterDataView(APIView):
-    def get(self, request):
-        
-        try:
-            connection = psycopg2.connect(
-                dbname='aod-project', user='postgres', password='mandaika', host='localhost', port='5432'
-            )
-            cursor = connection.cursor()
-
-            
-            query = """
-                SELECT ST_AsTIFF(raster)
-                FROM public.aoddata_rasterdata
-                WHERE ST_Intersects(raster, ST_MakeEnvelope(100.6, -10.5, 110.0, 0.00, 4326))
-            """
-            cursor.execute(query)
-            result = cursor.fetchone()
-
-            if result:
-                tile_data = result[0]  
-                return Response(tile_data, content_type='image/tiff')
-            else:
-                return JsonResponse(
-                    {"error": "Data raster tidak ditemukan."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-        except Exception as e:
-            return JsonResponse(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        finally:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
+# class GetRasterDataView(APIView):
+    # Sedang Pengerjaan

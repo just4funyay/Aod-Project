@@ -13,4 +13,4 @@ Database perlu install ekstensi postgis dan postgis_raster
 
 Pengembangan sejauh ini masih bersifat satu file saja
 
-Sementara untuk proses input Database Hit melalui Endpoint localhost:8000/api/inputdatabase
+Sementara untuk proses input Database Hit melalui Endpoint localhost:8000/api/input-database

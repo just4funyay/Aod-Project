@@ -140,7 +140,7 @@ REST_FRAMEWORK = {
 
 #Uji tiap 2 menit sekali ambil data viirs
 CRONJOBS = [
-    ('*/2 * * * *', 'Aod_data.retrieve_aod.retrieve_viirs_data')
+    ('* * * * *', 'Aod_data.retrieve_aod.retrieve_viirs_data')
 ]
 
 import os

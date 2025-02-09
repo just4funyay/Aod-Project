@@ -1,6 +1,7 @@
 import earthaccess
 import pathlib
 from datetime import datetime, timedelta
+import os
 
 def retrieve_viirs_data():
     today = datetime.today()
@@ -9,7 +10,11 @@ def retrieve_viirs_data():
     today = today.strftime("%Y-%m-%d")
     yesterday = yesterday.strftime("%Y-%m-%d")
 
-    cwd = pathlib.Path.cwd()
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    folder_name = 'aod-file'
+    download_path = os.path.join(base_dir, folder_name)
+    if not os.path.exists(download_path):
+        os.makedirs(download_path)
 
     auth = earthaccess.login(strategy="netrc")
 
@@ -20,8 +25,8 @@ def retrieve_viirs_data():
         temporal=(yesterday, today)
     )
 
-    folder_name = 'aod-file'
-    download_path = cwd / folder_name
+    folder_name = 'Aod_data/aod-file'
+    #download_path = cwd / folder_name
     print(download_path)
     # 3. Access
     files = earthaccess.download(results, download_path)

@@ -9,11 +9,16 @@ from django.http import JsonResponse
 from .models import RasterData
 from django.core.files import File
 from django.contrib.gis.gdal import GDALRaster
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+from .serializers import RasterDataSerializer
+from django.utils.timezone import now
+from django.http import HttpResponse,FileResponse
+import rasterio
+from io import BytesIO
 
 class InputDatabase(APIView):
     def get(self, request):
-        today = datetime.today()
+        today = date.today()
         nc_folder_path = os.path.join(settings.BASE_DIR, 'Aod_data/aod-file')
 
         if not os.path.exists(nc_folder_path):
@@ -63,39 +68,42 @@ class InputDatabase(APIView):
             status=status.HTTP_200_OK if not errors else status.HTTP_206_PARTIAL_CONTENT
         )
 
+
 class GetRasterDataView(APIView):
     def get(self, request):
-        
         try:
-            connection = psycopg2.connect(
-                dbname='aod-project', user='postgres', password='mandaika', host='localhost', port='5432'
+            # Ambil data raster terakhir dari database
+            raster_data = RasterData.objects.latest('pk')
+            gdal_raster = raster_data.raster
+
+            # Simpan raster ke dalam objek BytesIO
+            file_buffer = BytesIO()
+
+            # Pastikan menggunakan transform yang sesuai
+            transform = rasterio.transform.from_origin(
+                gdal_raster.origin.x, gdal_raster.origin.y, gdal_raster.scale.x, gdal_raster.scale.y
             )
-            cursor = connection.cursor()
 
-            
-            query = """
-                SELECT ST_AsTIFF(raster)
-                FROM public.aoddata_rasterdata
-                WHERE ST_Intersects(raster, ST_MakeEnvelope(100.6, -10.5, 110.0, 0.00, 4326))
-            """
-            cursor.execute(query)
-            result = cursor.fetchone()
+            with rasterio.open(
+                file_buffer, 'w',
+                driver='GTiff',
+                width=gdal_raster.width,
+                height=gdal_raster.height,
+                count=1,
+                dtype=gdal_raster.bands[0].data().dtype.name,
+                crs=gdal_raster.srs.wkt,
+                transform=transform
+            ) as dst:
+                dst.write(gdal_raster.bands[0].data(), 1)
 
-            if result:
-                tile_data = result[0]  
-                return Response(tile_data, content_type='image/tiff')
-            else:
-                return JsonResponse(
-                    {"error": "Data raster tidak ditemukan."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+            # Kembalikan file sebagai response download
+            file_buffer.seek(0)
+            response = HttpResponse(file_buffer, content_type='image/tiff')
+            response['Content-Disposition'] = 'attachment; filename="raster_latest.tif"'
+
+            return response
+
+        except RasterData.DoesNotExist:
+            return HttpResponse("Data raster tidak ditemukan.", status=404)
         except Exception as e:
-            return JsonResponse(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-        finally:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
+            return HttpResponse(f"Error: {str(e)}", status=500)

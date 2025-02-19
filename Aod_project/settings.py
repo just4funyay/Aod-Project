@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'rest_framework',
     'Aod_data',
-    'django_crontab'
+    'django_crontab',
+    'Weather_data',
 ]
 
 MIDDLEWARE = [

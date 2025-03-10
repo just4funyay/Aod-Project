@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,9 +43,11 @@ INSTALLED_APPS = [
     'Aod_data',
     'django_crontab',
     'Weather_data',
+    'django.contrib.postgres',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -139,12 +142,15 @@ REST_FRAMEWORK = {
     ]
 }
 
-#Uji tiap 2 menit sekali ambil data viirs
+
 CRONJOBS = [
-    ('* * * * *', 'Aod_data.retrieve_aod.retrieve_viirs_data')
+    ('0 */3 * * *', 'Aod_data.retrieve_aod.retrieve_viirs_data'),
+    ('0 */3 * * *', 'Weather_data.cron.fetch_weather_data')
 ]
 
 import os
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+CORS_ORIGIN_ALLOW_ALL = True

@@ -54,8 +54,7 @@ CREATE EXTENSION postgis_raster;
 Untuk mengakses file Excel (.xls) PM2.5 dari rendah emisi, Anda perlu menyesuaikan package `xlrd` yang digunakan dalam project:
 
 1. Masuk ke folder package Python `xlrd`.
-2. Edit file `composer.py` sesuai dengan kebutuhan dan sesuaikan konfigurasi yang diperlukan.
+2. Edit file `compdoc.py` seperti ini:
+![edit compdoc](images/compdoc.png)
 
 ---
-
-Pastikan untuk mengikuti langkah-langkah di atas dengan hati-hati agar konfigurasi berjalan lancar.

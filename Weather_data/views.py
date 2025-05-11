@@ -4,88 +4,225 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from django.contrib.gis.geos import Point
-from .models import WeatherData
-from .serializers import WeatherDataSerializer
+from .models import WeatherData,WeatherStation,pm25DataActual,pm25DataPrediction
+from .serializers import WeatherDataSerializer,pm25DataActualSerializer,pm25DataPredictionSerializer
 
-# API Key Visual Crossing (Ganti dengan API Key Anda)
+
 API_KEY = "KTJ63YA3XS9PHPBWTWHKAR5D8"
 BASE_URL = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
 
-# Daftar lokasi dengan koordinatnya
-lokasi = {
-    'us_embassy_1': (-6.1811056, 106.8279877),
-    'us_embassy_2': (-6.236658728205383, 106.79319751533286),
-    'jakarta_gbk': (-6.2155, 106.803),
-    'bundaran_hi': (-6.19466, 106.8235),
-    'kelapa_gading': (-6.1535777, 106.910887),
-    'jagakarsa': (-6.35693, 106.80367),
-    'lubang_buaya': (-6.28889, 106.90919),
-    'kebun_jeruk': (-6.20737, 106.7525)
-}
-
-class WeatherView(APIView):
+class WeatherFetchView(APIView):
     def get(self, request):
         results = []
-        for nama, (lat, lon) in lokasi.items():
-            api_url = f"{BASE_URL}{lat},{lon}?unitGroup=metric&key={API_KEY}&include=current"
+        stations = WeatherStation.objects.all()
 
-            response = requests.get(api_url)
+        for station in stations:
+            lat = station.location.y
+            lon = station.location.x
+            name = station.name
+
+            url = f"{BASE_URL}{lat},{lon}?unitGroup=metric&key={API_KEY}&include=days"
+            response = requests.get(url)
+
             if response.status_code == 200:
                 data = response.json()
-                current_data = data.get('currentConditions', {})
+                days = data.get('days', [])
 
-                # Ambil tanggal dari data 'days' dan waktu dari 'currentConditions'
-                date_part = data.get('days', [{}])[0].get('datetime', None)  # Format: YYYY-MM-DD
-                time_part = current_data.get('datetime', None)  # Format: HH:mm:ss
-                
-                if date_part and time_part:
-                    full_datetime_str = f"{date_part} {time_part}"
-                    full_datetime = datetime.strptime(full_datetime_str, "%Y-%m-%d %H:%M:%S")
+                if days:
+                    day_data = days[0]
+                    date_str = day_data.get('datetime')
+                    if date_str:
+                        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+                        if not WeatherData.objects.filter(station=station, date=date_obj).exists():
+                            weather = WeatherData.objects.create(
+                                station=station,
+                                date=date_obj,
+                                temperature=day_data.get('temp'),
+                                temp_max=day_data.get('tempmax'),
+                                temp_min=day_data.get('tempmin'),
+                                feels_like=day_data.get('feelslike'),
+                                feels_like_max=day_data.get('feelslikemax'),
+                                feels_like_min=day_data.get('feelslikemin'),
+                                dew_point=day_data.get('dew'),
+                                humidity=day_data.get('humidity'),
+                                wind_speed=day_data.get('windspeed'),
+                                wind_gust=day_data.get('windgust'),
+                                wind_dir=day_data.get('winddir'),
+                                precipitation=day_data.get('precip'),
+                                precip_cover=day_data.get('precipcover'),
+                                barometric_pressure=day_data.get('pressure'),
+                                sea_level_pressure=day_data.get('sealevelpressure'),
+                                cloud_cover=day_data.get('cloudcover'),
+                                visibility=day_data.get('visibility'),
+                                uv_index=day_data.get('uvindex'),
+                                solar_radiation=day_data.get('solarradiation'),
+                                solar_energy=day_data.get('solarenergy')
+                            )
+
+                            results.append({
+                                "station": name,
+                                "date": date_obj,
+                                "status": "Created",
+                                "temperature": weather.temperature,
+                                "temp_max": weather.temp_max,
+                                "temp_min": weather.temp_min,
+                                "feels_like": weather.feels_like,
+                                "feels_like_max": weather.feels_like_max,
+                                "feels_like_min": weather.feels_like_min,
+                                "dew_point": weather.dew_point,
+                                "humidity": weather.humidity,
+                                "wind_speed": weather.wind_speed,
+                                "wind_gust": weather.wind_gust,
+                                "wind_dir": weather.wind_dir,
+                                "precipitation": weather.precipitation,
+                                "precip_cover": weather.precip_cover,
+                                "barometric_pressure": weather.barometric_pressure,
+                                "sea_level_pressure": weather.sea_level_pressure,
+                                "cloud_cover": weather.cloud_cover,
+                                "visibility": weather.visibility,
+                                "uv_index": weather.uv_index,
+                                "solar_radiation": weather.solar_radiation,
+                                "solar_energy": weather.solar_energy
+                            })
+                        else:
+                            results.append({
+                                "station": name,
+                                "date": date_obj,
+                                "status": "Skipped - already exists"
+                            })
+                    else:
+                        results.append({
+                            "station": name,
+                            "status": "Missing date"
+                        })
                 else:
-                    full_datetime = None  # Jika gagal mendapatkan tanggal & waktu
-
-                # Ambil data cuaca lainnya
-                temperature = current_data.get('temp', None)
-                humidity = current_data.get('humidity', None)
-                wind_speed = current_data.get('windspeed', None)
-                precipitation = current_data.get('precip', None)
-                barometric_pressure = current_data.get('pressure', None)
-
-                # Simpan ke database dengan PostGIS
-                weather_entry = WeatherData.objects.create(
-                    name_location=nama,
-                    geom=Point(lon, lat),  # Simpan sebagai PointField
-                    datetime=full_datetime,
-                    temperature=temperature,
-                    humidity=humidity,
-                    wind_speed=wind_speed,
-                    precipitation=precipitation,
-                    barometric_pressure=barometric_pressure
-                )
-
-                results.append({
-                    "name_location": nama,
-                    "geom": {"type": "Point", "coordinates": [lon, lat]},
-                    "datetime": full_datetime,
-                    "temperature": temperature,
-                    "humidity": humidity,
-                    "wind_speed": wind_speed,
-                    "precipitation": precipitation,
-                    "barometric_pressure": barometric_pressure
-                })
+                    results.append({
+                        "station": name,
+                        "status": "No daily data available"
+                    })
             else:
                 results.append({
-                    "name_location": nama,
-                    "geom": {"type": "Point", "coordinates": [lon, lat]},
-                    "error": f"Failed to fetch data: {response.status_code}"
+                    "station": name,
+                    "error": f"Failed to fetch: {response.status_code}"
                 })
 
         return Response(results, status=status.HTTP_200_OK)
-
-
 
 class WeatherDataListView(APIView):
     def get(self, request):
         weather_data = WeatherData.objects.all()
         serializer = WeatherDataSerializer(weather_data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class LatestPM25ActualView(APIView):
+    def get(self, request):
+        latest_data = (
+            pm25DataActual.objects.all()
+        )
+        serializer = pm25DataActualSerializer(latest_data, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LatestPM25ActualView(APIView):
+    def get(self, request):
+        # Ambil semua data dan ikut sertakan relasi 'station' agar query lebih efisien
+        all_data = pm25DataActual.objects.select_related('station').all()
+
+        # Serialize data
+        serializer = pm25DataActualSerializer(all_data, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class AddWeatherStations(APIView):
+    def get(self, request, *args, **kwargs):
+        locations = {
+            'us_embassy_1': (-6.1811056, 106.8279877),
+            'us_embassy_2': (-6.236658728205383, 106.79319751533286),
+            'jakarta_gbk': (-6.2155, 106.803),
+            'bundaran_hi': (-6.19466, 106.8235),
+            'kelapa_gading': (-6.1535777, 106.910887),
+            'jagakarsa': (-6.35693, 106.80367),
+            'lubang_buaya': (-6.28889, 106.90919),
+            'kebun_jeruk': (-6.20737, 106.7525)
+        }
+
+        # Menambahkan stasiun cuaca
+        for station_name, coords in locations.items():
+            lat, lon = coords
+            point = Point(lon, lat)  
+
+            # Menyimpan data ke model WeatherStation
+            WeatherStation.objects.create(name=station_name, location=point)
+
+        return Response({"message": "Weather stations added successfully!"}, status=status.HTTP_201_CREATED)
+    
+from datetime import date, timedelta, datetime
+
+class WeatherFetchViewRange(APIView):
+    def get(self, request):
+        results = []
+        stations = WeatherStation.objects.all()
+
+        end_date = date.today()
+        start_date = end_date - timedelta(days=39)  # Total 40 hari termasuk hari ini
+
+        for station in stations:
+            lat = station.location.y
+            lon = station.location.x
+            name = station.name
+
+            url = f"{BASE_URL}{lat},{lon}/{start_date}/{end_date}?unitGroup=metric&key={API_KEY}&include=days"
+            response = requests.get(url)
+
+            if response.status_code == 200:
+                data = response.json()
+                days = data.get('days', [])
+
+                for day_data in days:
+                    date_str = day_data.get('datetime')
+                    if date_str:
+                        date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+                        if not WeatherData.objects.filter(station=station, date=date_obj).exists():
+                            weather = WeatherData.objects.create(
+                                station=station,
+                                date=date_obj,
+                                temperature=day_data.get('temp'),
+                                temp_max=day_data.get('tempmax'),
+                                temp_min=day_data.get('tempmin'),
+                                feels_like=day_data.get('feelslike'),
+                                feels_like_max=day_data.get('feelslikemax'),
+                                feels_like_min=day_data.get('feelslikemin'),
+                                dew_point=day_data.get('dew'),
+                                humidity=day_data.get('humidity'),
+                                wind_speed=day_data.get('windspeed'),
+                                wind_gust=day_data.get('windgust'),
+                                wind_dir=day_data.get('winddir'),
+                                precipitation=day_data.get('precip'),
+                                precip_cover=day_data.get('precipcover'),
+                                barometric_pressure=day_data.get('pressure'),
+                                sea_level_pressure=day_data.get('sealevelpressure'),
+                                cloud_cover=day_data.get('cloudcover'),
+                                visibility=day_data.get('visibility'),
+                                uv_index=day_data.get('uvindex'),
+                                solar_radiation=day_data.get('solarradiation'),
+                                solar_energy=day_data.get('solarenergy')
+                            )
+                            results.append({
+                                "station": name,
+                                "date": date_obj,
+                                "status": "Created"
+                            })
+                        else:
+                            results.append({
+                                "station": name,
+                                "date": date_obj,
+                                "status": "Skipped - already exists"
+                            })
+            else:
+                results.append({
+                    "station": name,
+                    "error": f"Failed to fetch: {response.status_code}"
+                })
+
+        return Response(results, status=status.HTTP_200_OK)

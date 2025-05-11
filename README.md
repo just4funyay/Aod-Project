@@ -1,16 +1,61 @@
-# Aod-Project
 
-Perlu install OsGeo4w untuk kebutuhan dependencies GeoDjango [halaman unduhan OSGeo4W](https://trac.osgeo.org/osgeo4w/).
-Selanjutnya konfigurasi disini [Panduan Instalasi Django GIS](https://docs.djangoproject.com/en/5.1/ref/contrib/gis/install/)
+# Konfigurasi Project AOD
 
-Terdapat 4 Folder:
-- [aod-file](https://github.com/just4funyay/Aod-Project/tree/main/aod-file), folder ini menampung file .nc sementara sebelum pre-processing.
-- [aod](https://github.com/just4funyay/Aod-Project/tree/main/aod), folder proyek utama
-- [aoddata](https://github.com/just4funyay/Aod-Project/tree/main/aoddata), folder app
-- [media](https://github.com/just4funyay/Aod-Project/tree/main/aoddata), folder penampungan sementara hasil konversi file.nc menjadi file.tiff
+Berikut adalah langkah-langkah konfigurasi untuk memulai project AOD.
 
-Database perlu install ekstensi postgis dan postgis_raster
+## 1. Install GDAL
 
-Pengembangan sejauh ini masih bersifat satu file saja
+Untuk menginstal GDAL dan dependensinya, jalankan perintah berikut di terminal:
 
-Sementara untuk proses input Database Hit melalui Endpoint localhost:8000/api/input-database
+```bash
+sudo apt-get install gdal-bin libgdal-dev
+```
+
+## 2. Install PostgreSQL, PostGIS, dan Dependencies
+
+Install PostgreSQL, PostGIS, dan seluruh package yang terdaftar di `requirements.txt` dengan menjalankan perintah berikut:
+
+```bash
+sudo apt-get install postgresql postgis
+pip install -r requirements.txt
+```
+
+## 3. Konfigurasi Database
+
+### 3.1. Buat Database, User, dan Password
+
+Masuk ke PostgreSQL dan buat database, user, dan password sesuai dengan yang tertera di `Aod-project/settings.py`:
+
+```bash
+psql -U postgres
+```
+
+Setelah masuk ke PostgreSQL, buat database dan user sebagai berikut:
+
+```sql
+CREATE DATABASE aodproject;
+CREATE USER aoduser WITH PASSWORD 'tioninta';
+GRANT ALL PRIVILEGES ON DATABASE aodproject TO aoduser;
+ALTER ROLE aoduser WITH SUPERUSER;
+```
+
+### 3.2. Install Ekstensi PostGIS dan PostGIS Raster
+
+Setelah database dan user selesai dibuat, masuk ke database yang baru dibuat dan install ekstensi PostGIS dan PostGIS Raster:
+
+```bash
+\c aodproject
+CREATE EXTENSION postgis;
+CREATE EXTENSION postgis_raster;
+```
+
+## 4. Konfigurasi Package Python `xlrd`
+
+Untuk mengakses file Excel (.xls) PM2.5 dari rendah emisi, Anda perlu menyesuaikan package `xlrd` yang digunakan dalam project:
+
+1. Masuk ke folder package Python `xlrd`.
+2. Edit file `composer.py` sesuai dengan kebutuhan dan sesuaikan konfigurasi yang diperlukan.
+
+---
+
+Pastikan untuk mengikuti langkah-langkah di atas dengan hati-hati agar konfigurasi berjalan lancar.

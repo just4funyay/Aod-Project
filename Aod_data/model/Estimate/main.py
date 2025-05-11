@@ -1,0 +1,108 @@
+import os
+import sys
+import django
+import pandas as pd
+import csv
+import joblib
+from predict import predict_model
+from csvToRaster import csv_to_geotiff
+
+# Setup Django environment
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+sys.path.append(PROJECT_ROOT)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Aod_project.settings")
+django.setup()
+
+
+from Aod_data.models import RasterData, pm25DataEstimate
+from Weather_data.models import WeatherData
+from django.contrib.gis.gdal import GDALRaster
+
+
+folderpath = 'Aod_data/model/Estimate'
+os.makedirs(folderpath, exist_ok=True)
+
+
+rasterdata_all = RasterData.objects.all()
+
+for rasterdata in rasterdata_all:
+    aod_value = rasterdata.data
+    aod_date = rasterdata.time_retrieve
+
+    # Cek apakah sudah diproses sebelumnya
+    if pm25DataEstimate.objects.filter(aodid=rasterdata).exists():
+        print(f"[SKIP] Data PM2.5 untuk RasterData ID {rasterdata.id} sudah ada.")
+        continue
+
+    weather_on_date = WeatherData.objects.filter(date=aod_date)
+    if not weather_on_date.exists():
+        print(f"[WARNING] Tidak ada data cuaca untuk tanggal {aod_date}, lewati ID {rasterdata.id}.")
+        continue
+
+    merged_rows = []
+
+    for aod in aod_value:
+        aod_longitude = aod['longitude']
+        aod_latitude = aod['latitude']
+        aod_val = aod['aod_values']
+
+        for weather_data in weather_on_date:
+            merged_rows.append({
+                'datetime': aod_date,
+                'aod_longitude': aod_longitude,
+                'aod_latitude': aod_latitude,
+                'station_longitude': weather_data.station.location.x,
+                'station_latitude': weather_data.station.location.y,
+                'AOD': aod_val,
+                'tempmax': weather_data.temp_max,
+                'tempmin': weather_data.temp_min,
+                'temp': weather_data.temperature,
+                'feelslikemax': weather_data.feels_like_max,
+                'feelslikemin': weather_data.feels_like_min,
+                'feelslike': weather_data.feels_like,
+                'dew': weather_data.dew_point,
+                'humidity': weather_data.humidity,
+                'precip': weather_data.precipitation,
+                'precipcover': weather_data.precip_cover,
+                'windgust': weather_data.wind_gust,
+                'windspeed': weather_data.wind_speed,
+                'winddir': weather_data.wind_dir,
+                'sealevelpressure': weather_data.sea_level_pressure,
+                'cloudcover': weather_data.cloud_cover,
+                'visibility': weather_data.visibility,
+                'solarradiation': weather_data.solar_radiation,
+                'solarenergy': weather_data.solar_energy,
+                'uvindex': weather_data.uv_index,
+            })
+
+    if not merged_rows:
+        print(f"[WARNING] Tidak ada data gabungan untuk ID {rasterdata.id}, lewati.")
+        continue
+
+    # Simpan ke CSV
+    file_name = os.path.join(folderpath, f'aod_data_{rasterdata.id}.csv')
+    with open(file_name, mode='w', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=merged_rows[0].keys())
+        writer.writeheader()
+        writer.writerows(merged_rows)
+
+    print(f"[INFO] Data AOD ID {rasterdata.id} disimpan ke {file_name}")
+
+    
+    df = predict_model(file_name)
+    
+    tiff_file = os.path.join(folderpath, f'predicted_{rasterdata.id}.tif')
+    tiff_file = csv_to_geotiff(df, tiff_file)
+
+    
+    raster = GDALRaster(tiff_file, write=True)
+    data = df.to_dict(orient="records")
+
+    pm25data = pm25DataEstimate.objects.create(
+        aodid=rasterdata,
+        valuepm25=data,
+        raster=raster,
+        time=rasterdata.time_retrieve
+    )
+
+    print(f"[SUCCESS] Prediksi PM2.5 untuk ID {rasterdata.id} disimpan ke database.\n")

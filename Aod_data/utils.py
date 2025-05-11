@@ -4,40 +4,59 @@ import rasterio
 from rasterio.transform import from_bounds
 import numpy as np
 from django.contrib.gis.gdal import GDALRaster 
+import rioxarray
+
+#NC file -> TIFF file
 
 def convert_to_geoTiFF_input_data(nc_file_path, geotiff_file_path):
-    ds = xr.open_dataset(nc_file_path,decode_timedelta=False)
+    ds = xr.open_dataset(nc_file_path, decode_timedelta=False)
+    folder_name = os.path.basename(os.path.dirname(nc_file_path))
 
-    # Ambil variabel data
-    latitude = ds['Latitude'].values
-    longitude = ds['Longitude'].values
-    aod = ds['Aerosol_Optical_Thickness_550_Land_Best_Estimate'].values
+    # Batas wilayah Jakarta
+    lat_min, lat_max = -6.5, -6.08
+    lon_min, lon_max = 106.6, 107.0
 
-    # Ganti NaN dengan 0 untuk validasi nilai AOD
-    aod_valid = np.where(np.isnan(aod), 0, aod)
+    if folder_name == 'VIIRS':
+        # Ambil data koordinat dan AOD
+        lat = ds['Latitude']
+        lon = ds['Longitude']
+        aod = ds['Aerosol_Optical_Thickness_550_Land_Ocean_Best_Estimate']
 
-    # Mask untuk memilih data dalam batas region
-    lat_min, lat_max, lon_min, lon_max = -6.5, -5.9, 106.6, 107.0
-    mask_region = (latitude >= lat_min) & (latitude <= lat_max) & (longitude >= lon_min) & (longitude <= lon_max)
-    aod_filtered = np.full(aod.shape, 0, dtype=np.float32)
-    aod_filtered[mask_region] = aod_valid[mask_region]
+        # Masking wilayah Jakarta
+        mask = (
+            (lat >= lat_min) & (lat <= lat_max) &
+            (lon >= lon_min) & (lon <= lon_max)
+        )
+        aod_filtered = aod.where(mask)
+        aod_filtered = aod_filtered.fillna(-9999)
 
-    # Pastikan bounding box sesuai transform
-    transform_region = from_bounds(
-        lon_min, lat_min,  # xmin, ymin
-        lon_max, lat_max,  # xmax, ymax
-        aod_filtered.shape[1], aod_filtered.shape[0]
-    )
+        # Set koordinat eksplisit agar bisa diubah ke raster
+        aod_filtered.coords['latitude'] = (('y', 'x'), lat.values)
+        aod_filtered.coords['longitude'] = (('y', 'x'), lon.values)
 
-    # Simpan ke GeoTIFF
-    with rasterio.open(
-        geotiff_file_path, 'w', driver='GTiff',
-        height=aod_filtered.shape[0], width=aod_filtered.shape[1],
-        count=1, dtype=rasterio.float32,
-        crs="EPSG:4326", transform=transform_region
-    ) as dst:
-        dst.write(aod_filtered, 1)
+        # Tulis CRS dan simpan sebagai GeoTIFF
+        aod_filtered = aod_filtered.rio.write_crs("EPSG:4326", inplace=False)
+        aod_filtered.rio.to_raster(geotiff_file_path)
 
+        return lat.values, lon.values, aod_filtered
 
+    elif folder_name == 'Himawari':
+        # Subset data Jakarta
+        ds_subset = ds.sel(
+            latitude=slice(lat_max, lat_min),
+            longitude=slice(lon_min, lon_max)
+        )
 
-    return aod_filtered  # Mengembalikan data filter yang dihasilkan
+        if 'AOT_L2_Mean' not in ds_subset:
+            raise ValueError("Data 'AOT_L2_Mean' tidak ditemukan dalam file.")
+
+        aod = ds_subset['AOT_L2_Mean']
+        aod = aod.rio.write_crs("EPSG:4326")
+
+        # Simpan sebagai GeoTIFF
+        aod.rio.to_raster(geotiff_file_path)
+
+        return ds_subset['latitude'].values, ds_subset['longitude'].values, aod
+
+    else:
+        raise ValueError(f"Folder '{folder_name}' tidak dikenali sebagai 'VIIRS' atau 'Himawari'.")

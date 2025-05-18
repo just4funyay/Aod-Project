@@ -3,6 +3,7 @@ import pathlib
 from datetime import datetime, timedelta
 import os
 import requests
+from Aod_data.utils import process_viirs_files
 
 def retrieve_viirs_data():
     today = datetime.today()
@@ -31,11 +32,4 @@ def retrieve_viirs_data():
     print(download_path)
     # 3. Access
     files = earthaccess.download(results, download_path)
-
-    response = requests.get("http://localhost:8000/api1/input-viirs/")
-
-    print("Status proses API:", response.status_code)
-    print("Response:", response.text)
-
-
-retrieve_viirs_data()
+    process_viirs_files()

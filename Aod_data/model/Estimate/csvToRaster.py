@@ -2,6 +2,8 @@ import numpy as np
 import xarray as xr
 import rasterio
 from rasterio.transform import from_origin
+import geopandas as gpd
+from shapely.geometry import box
 
 def csv_to_geotiff(dataframe, output_path):
     # Ambil kolom latitude, longitude, dan PM2.5
@@ -58,5 +60,31 @@ def csv_to_geotiff(dataframe, output_path):
     ) as dst:
         dst.write(pm25_grid, 1)
 
-    print(f"✅ GeoTIFF berhasil disimpan ke: {output_path}")
+    print(f"GeoTIFF berhasil disimpan ke: {output_path}")
     return output_path
+
+# csv -> polygon
+def csvToPolygon(dataframe, jakarta_geojson):
+    lat_res = 0.05
+    lon_res = 0.05
+    records = []
+    for _,row in dataframe.iterrows():
+        lat = row["aod_latitude"]
+        lon = row["aod_longitude"]
+        pm25 = row["PM2.5"]
+        
+        grid_cell = box(
+            lon - lon_res / 2, lat - lat_res / 2,
+            lon + lon_res / 2, lat + lat_res / 2
+        )
+        records.append({
+        'geometry': grid_cell,
+        'pm25': pm25
+    })
+    jakarta = gpd.read_file(jakarta_geojson)    
+    gdf = gpd.GeoDataFrame(records, crs="EPSG:4326")
+    clipped_gdf = gpd.clip(gdf, jakarta)
+    print(clipped_gdf)
+
+    return clipped_gdf
+    # disini

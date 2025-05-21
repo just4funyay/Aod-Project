@@ -20,12 +20,25 @@ from Weather_data.models import WeatherData, pm25DataActual, WeatherStation, pm2
 
 
 def predict_pm25_for_all_stations():
-    def find_nearest(array, value):
-        return (np.abs(array - value)).argmin()
+    import numpy as np
+    from datetime import timedelta
+    from django.utils import timezone
+    from sklearn.preprocessing import MinMaxScaler
+    from tensorflow.keras.models import load_model
+    import os
+    import pandas as pd
+
+    def find_nearest_point(lat_target, lon_target, latitudes, longitudes):
+        points = np.array(list(zip(latitudes, longitudes)))
+        target = np.array([lat_target, lon_target])
+        distances = np.linalg.norm(points - target, axis=1)
+        print(distances)
+        idx_min = distances.argmin()
+        return idx_min
 
     # Rentang tanggal prediksi
     end_date = timezone.now().date()
-    yesterday = end_date - timedelta(days=1)
+    yesterday = end_date - timedelta(days=10)
     start_date = yesterday - timedelta(days=30)
 
     # Ambil semua stasiun cuaca
@@ -34,23 +47,21 @@ def predict_pm25_for_all_stations():
     for station in stations:
         print(f"Memproses stasiun: {station.name} (ID: {station.id})")
         lon, lat = station.location.x, station.location.y
-
         aod_all = RasterData.objects.filter(time_retrieve__range=(start_date, yesterday)).order_by("time_retrieve")
         weather_all = WeatherData.objects.filter(date__range=(start_date, yesterday), station=station)
         pm25_all = pm25DataActual.objects.filter(date__range=(start_date, yesterday), station=station)
-
         records = []
         for aod in aod_all:
             date = aod.time_retrieve
-
             latitudes = [entry['latitude'] for entry in aod.data]
             longitudes = [entry['longitude'] for entry in aod.data]
             values = [entry['aod_values'] for entry in aod.data]
+            print(latitudes)
+            print(longitudes)
 
             try:
-                lat_idx = find_nearest(np.array(latitudes), lat)
-                lon_idx = find_nearest(np.array(longitudes), lon)
-                aod_value = values[lat_idx]
+                idx_terdekat = find_nearest_point(lat, lon, latitudes, longitudes)
+                aod_value = values[idx_terdekat]
             except Exception:
                 aod_value = None
 
@@ -117,8 +128,12 @@ def predict_pm25_for_all_stations():
 
         print(f"Prediksi PM2.5 untuk stasiun {station.name}: {y_pred_real:.2f}")
 
-        pm25DataPrediction.objects.update_or_create(
-            station=station,
-            date=yesterday,
-            defaults={'pm25_value': y_pred_real}
-        )
+        # Simpan prediksi ke DB kalau perlu
+        # pm25DataPrediction.objects.update_or_create(
+        #     station=station,
+        #     date=yesterday,
+        #     defaults={'pm25_value': y_pred_real}
+        # )
+
+
+predict_pm25_for_all_stations()

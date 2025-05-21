@@ -8,7 +8,7 @@ class WeatherDataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WeatherData
-        fields = '__all__'
+        fields = ["temperature", "precipitation", "humidity", "wind_dir", "wind_speed","station_name","latitude","longitude"]
 
     def get_latitude(self, obj):
         if obj.station and obj.station.location:
@@ -19,7 +19,7 @@ class WeatherDataSerializer(serializers.ModelSerializer):
         if obj.station and obj.station.location:
             return obj.station.location.x  
         return None
-
+    
 class WeatherStationSerializer(serializers.ModelSerializer):   
     class Meta:
         model = WeatherStation

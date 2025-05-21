@@ -53,10 +53,10 @@ def download_ispu_now():
             filename = os.path.join(output_folder, f"{nama_tempat}_{formatted_date.replace('-', '')}.xls")
             with open(filename, "wb") as f:
                 f.write(res_download.content)
-            print(f"[✓] Berhasil disimpan: {filename}")
+            print(f"Berhasil disimpan: {filename}")
 
         except Exception as e:
-            print(f"[!] Gagal memproses {nama_tempat} {formatted_date}: {e}")
+            print(f"Gagal memproses {nama_tempat} {formatted_date}: {e}")
     
     pm25ToDatabase(output_folder,"ISPU PM2.5")
 
@@ -101,7 +101,7 @@ def download_ispu_last_40_days():
             file_date = date.strftime("%Y%m%d")
             filename = os.path.join(output_folder, f"{nama_tempat}_{file_date}.xls")
 
-                # Skip jika file sudah ada
+                
             if os.path.exists(filename):
                 print(f"[=] Lewati (sudah ada): {filename}")
                 continue

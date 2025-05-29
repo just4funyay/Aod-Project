@@ -147,10 +147,12 @@ REST_FRAMEWORK = {
 
 
 CRONJOBS = [
-    ('0 * * * *', 'Aod_data.retrieve_aod.retrieve_viirs_data'),
-    ('0 * * * *', 'Weather_data.cron.fetch_weather_data_range'),
-    ('0 * * * *', 'Aod_data.getDataHimawari.getDataHimawari'),
-    ('0 * * * *', 'Weather_data.crawlingPm25.download_ispu_last_40_days'),
+    #('0 * * * *', 'Aod_data.retrieve_aod.retrieve_viirs_data'), # Retrieve data VIIRS 
+    ('0 * * * *', 'Weather_data.cron.fetch_weather_data_range'), # Retrieve data cuaca dari visual crossing
+    ('0 * * * *', 'Aod_data.getDataHimawari.getDataHimawari'), # Retrieve data Himawari
+    ('0 * * * *', 'Weather_data.crawlingPm25.download_ispu_now'), # Retrieve data ispu pm25
+    ('0 * * * *', 'Aod_data.model.Estimate.main.estimatePm25'), # Menjalankan model Estimasi pm25
+    ('0 * * * *', 'Aod_data.model.Prediction.main.predict_pm25_for_all_stations') # menjalankan model prediksi pm25
 ]
 
 import os

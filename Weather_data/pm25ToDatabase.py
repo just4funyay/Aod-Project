@@ -21,10 +21,11 @@ def pm25ToDatabase(folder_path, kolom_nilai='ISPU PM2.5'):
                 nama_stasiun = '_'.join(parts[:-1])
                 tanggal_str = parts[-1]
                 print(tanggal_str)
-                tanggal = datetime.strptime(tanggal_str, "%Y%m%d").date()
+                tanggal = datetime.strptime(tanggal_str, "%d%m%Y").date()
                 
-
+                print(tanggal)    
                 full_path = os.path.join(folder_path, file)
+                print(full_path)
                 df = pd.read_excel(full_path)
 
                 if kolom_nilai not in df.columns:

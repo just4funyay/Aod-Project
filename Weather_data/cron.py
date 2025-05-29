@@ -70,7 +70,7 @@ def fetch_weather_data_range():
     stations = WeatherStation.objects.all()
 
     end_date = date.today()
-    start_date = end_date - timedelta(days=1)
+    start_date = end_date - timedelta(days=3)
 
     for station in stations:
         lat = station.location.y

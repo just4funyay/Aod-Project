@@ -57,7 +57,7 @@ def download_ispu_now():
 
         except Exception as e:
             print(f"Gagal memproses {nama_tempat} {formatted_date}: {e}")
-    
+    print(output_folder)
     pm25ToDatabase(output_folder,"ISPU PM2.5")
 
 import requests

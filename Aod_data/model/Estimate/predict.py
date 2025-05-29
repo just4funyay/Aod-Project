@@ -1,5 +1,18 @@
 import joblib
 import pandas as pd
+import os
+import sys
+import django
+import pandas as pd
+import csv
+import joblib
+
+
+# Setup Django environment
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+sys.path.append(PROJECT_ROOT)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Aod_project.settings")
+django.setup()
 
 def predict_model(filename):
         model = joblib.load("Aod_data/model/Estimate/best_model.pkl")

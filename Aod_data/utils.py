@@ -23,9 +23,10 @@ from Aod_data.models import Sattellite, RasterData, Polygondata
 
 
 def convert_to_geoTiFF_input_data(nc_file_path, geotiff_file_path, geojson_filepath):
+    print(nc_file_path)
     ds = xr.open_dataset(nc_file_path, decode_timedelta=False)
     folder_name = os.path.basename(os.path.dirname(nc_file_path))
-
+    print(folder_name)
     # Batas wilayah Jakarta
     lat_min, lat_max = -6.5, -6.08
     lon_min, lon_max = 106.6, 107.0
@@ -62,11 +63,14 @@ def convert_to_geoTiFF_input_data(nc_file_path, geotiff_file_path, geojson_filep
 
     elif folder_name == 'Himawari':
         # Subset data Jakarta
+        # Batas wilayah Jakarta
+        lat_min, lat_max = -6.5, -6.08
+        lon_min, lon_max = 106.6, 107.0
         ds_subset = ds.sel(
             latitude=slice(lat_max, lat_min),
             longitude=slice(lon_min, lon_max)
         )
-
+        print(ds_subset)
         if 'AOT_L2_Mean' not in ds_subset:
             raise ValueError("Data 'AOT_L2_Mean' tidak ditemukan dalam file.")
         
@@ -136,7 +140,6 @@ def process_himawari_data():
 
                 try:
                     latitude, longitude, aod_values, clipped_gdf = convert_to_geoTiFF_input_data(nc_file_path, geotiff_file_path, jakarta_geojson)
-
                     dataraster = []
                     for i in range(latitude.shape[0]):
                         for j in range(longitude.shape[0]):
@@ -151,7 +154,7 @@ def process_himawari_data():
                                 "longitude": lon_value,
                                 "aod_values": aod_value
                             })
-
+                    print(dataraster)
                     raster_data = RasterData.objects.create(
                         sattellite=sattellite,
                         data=dataraster,

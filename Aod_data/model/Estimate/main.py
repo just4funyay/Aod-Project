@@ -4,8 +4,6 @@ import django
 import pandas as pd
 import csv
 import joblib
-from predict import predict_model
-from csvToRaster import csv_to_geotiff,csvToPolygon
 
 # Setup Django environment
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
@@ -14,11 +12,13 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Aod_project.settings")
 django.setup()
 
 
+from .predict import predict_model
 from Aod_data.models import RasterData, pm25DataEstimate, PolygondataPM25
 from Weather_data.models import WeatherData
 from django.contrib.gis.gdal import GDALRaster
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
+from .csvToRaster import csv_to_geotiff,csvToPolygon
 
 folderpath = 'Aod_data/model/Estimate'
 os.makedirs(folderpath, exist_ok=True)
@@ -28,6 +28,7 @@ def estimatePm25():
 
     for rasterdata in rasterdata_all:
         aod_value = rasterdata.data
+        print(aod_value)
         aod_date = rasterdata.time_retrieve
 
         # Cek apakah sudah diproses sebelumnya
@@ -46,6 +47,7 @@ def estimatePm25():
             aod_longitude = aod['longitude']
             aod_latitude = aod['latitude']
             aod_val = aod['aod_values']
+            print(aod_latitude,aod_longitude)
 
             for weather_data in weather_on_date:
                 merged_rows.append({

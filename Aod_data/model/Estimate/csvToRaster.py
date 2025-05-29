@@ -4,14 +4,25 @@ import rasterio
 from rasterio.transform import from_origin
 import geopandas as gpd
 from shapely.geometry import box
+import os
+import sys
+import django
+import pandas as pd
+import csv
+import joblib
+
+# Setup Django environment
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+sys.path.append(PROJECT_ROOT)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Aod_project.settings")
+django.setup()
 
 def csv_to_geotiff(dataframe, output_path):
-    # Ambil kolom latitude, longitude, dan PM2.5
+    
     latitudes = dataframe['aod_latitude'].values
     longitudes = dataframe['aod_longitude'].values
     pm25_values = dataframe['PM2.5'].values
 
-    # Ambil nilai unik dan balik latitude agar dari utara ke selatan
     latitudes_unique = np.unique(latitudes)[::-1]
     longitudes_unique = np.unique(longitudes)
 

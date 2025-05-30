@@ -27,7 +27,7 @@ pip install -r requirements.txt
 Masuk ke PostgreSQL dan buat database, user, dan password sesuai dengan yang tertera di `Aod-project/settings.py`:
 
 ```bash
-psql -U postgres
+sudo -u postgres psql
 ```
 
 Setelah masuk ke PostgreSQL, buat database dan user sebagai berikut:

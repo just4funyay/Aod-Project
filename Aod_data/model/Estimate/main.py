@@ -20,7 +20,7 @@ from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
 from .csvToRaster import csv_to_geotiff,csvToPolygon
 
-folderpath = 'Aod_data/model/Estimate'
+folderpath = os.path.join(settings.BASE_DIR, 'Aod_data', 'model', 'Estimate')
 os.makedirs(folderpath, exist_ok=True)
 
 def estimatePm25():

@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import os
 from .pm25ToDatabase import pm25ToDatabase
+from django.conf import settings
 
 def download_ispu_now():
     urls =  [
@@ -15,7 +16,7 @@ def download_ispu_now():
         {"url": "https://rendahemisi.jakarta.go.id/ispu-detail/7/dki4-lubang-buaya/", "nama_tempat": "lubang_buaya"},
         {"url": "https://rendahemisi.jakarta.go.id/ispu-detail/8/dki5-kebun-jeruk/", "nama_tempat": "kebun_jeruk"},
     ]
-    output_folder="Weather_data/data_ispu"
+    output_folder = os.path.join(settings.BASE_DIR, "Weather_data", "data_ispu")
     os.makedirs(output_folder, exist_ok=True)
 
     # Ambil tanggal hari ini
@@ -60,12 +61,6 @@ def download_ispu_now():
     print(output_folder)
     pm25ToDatabase(output_folder,"ISPU PM2.5")
 
-import requests
-from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
-import os
-from .pm25ToDatabase import pm25ToDatabase
-
 def download_ispu_last_40_days():
     urls = [
         {"url": "https://rendahemisi.jakarta.go.id/ispu-detail/1/us-embassy-1/", "nama_tempat": "us_embassy_1"},
@@ -78,7 +73,7 @@ def download_ispu_last_40_days():
         {"url": "https://rendahemisi.jakarta.go.id/ispu-detail/8/dki5-kebun-jeruk/", "nama_tempat": "kebun_jeruk"},
     ]
 
-    output_folder = "Weather_data/data_ispu"
+    output_folder = os.path.join(settings.BASE_DIR, "Weather_data", "data_ispu")
     os.makedirs(output_folder, exist_ok=True)
     download_url = "https://rendahemisi.jakarta.go.id/Page/ExportIspuData"
 

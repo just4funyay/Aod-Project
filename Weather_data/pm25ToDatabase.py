@@ -21,7 +21,7 @@ def pm25ToDatabase(folder_path, kolom_nilai='ISPU PM2.5'):
                 nama_stasiun = '_'.join(parts[:-1])
                 tanggal_str = parts[-1]
                 print(tanggal_str)
-                tanggal = datetime.strptime(tanggal_str, "%d%m%Y").date()
+                tanggal = datetime.strptime(tanggal_str, "%Y%m%d").date()
                 
                 print(tanggal)    
                 full_path = os.path.join(folder_path, file)

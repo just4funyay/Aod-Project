@@ -25,7 +25,7 @@ class WeatherStationSerializer(serializers.ModelSerializer):
         model = WeatherStation
         fields = '__all__'
 
-class pm25DataActualSerializer(serializers.ModelSerializer):
+class pm25DataSerializer(serializers.ModelSerializer):
     station_name = serializers.CharField(source='station.name', read_only=True)
     latitude = serializers.SerializerMethodField()
     longitude = serializers.SerializerMethodField()

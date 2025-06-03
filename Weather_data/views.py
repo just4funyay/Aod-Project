@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from django.contrib.gis.geos import Point
 from .models import WeatherData,WeatherStation,pm25DataActual,pm25DataPrediction
-from .serializers import WeatherDataSerializer,pm25DataActualSerializer,WeatherDateInputSerializer,PM25DateInputSerializer
+from .serializers import WeatherDataSerializer,pm25DataSerializer,WeatherDateInputSerializer,PM25DateInputSerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -63,7 +63,7 @@ class LatestPM25ActualView(APIView):
         operation_summary="Ambil Data PM2.5 Aktual Hari Ini",
         operation_description="Mengembalikan data PM2.5 aktual dari seluruh stasiun untuk tanggal hari ini.",
         responses={
-            200: pm25DataActualSerializer(many=True),
+            200: pm25DataSerializer(many=True),
             404: openapi.Response(description="Tidak ada data PM2.5 untuk tanggal hari ini."),
         }
     )
@@ -75,7 +75,7 @@ class LatestPM25ActualView(APIView):
                 {"message": f"Tidak ada data PM2.5 untuk tanggal {today}."},
                 status=status.HTTP_404_NOT_FOUND
             )
-        serializer = pm25DataActualSerializer(data_today, many=True)
+        serializer = pm25DataSerializer(data_today, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -85,7 +85,7 @@ class PM25ActualByDate(APIView):
         operation_description="Mengembalikan data PM2.5 aktual berdasarkan tanggal yang diberikan dalam format YYYY-MM-DD.",
         request_body=PM25DateInputSerializer,
         responses={
-            200: pm25DataActualSerializer(many=True),
+            200: pm25DataSerializer(many=True),
             400: openapi.Response(description="Input tanggal tidak valid."),
             404: openapi.Response(description="Tidak ada data PM2.5 untuk tanggal yang diminta."),
         }
@@ -104,8 +104,55 @@ class PM25ActualByDate(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        result_serializer = pm25DataActualSerializer(data, many=True)
+        result_serializer = pm25DataSerializer(data, many=True)
         return Response(result_serializer.data, status=status.HTTP_200_OK)
+
+class LatestPM25PredictionView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Ambil Data PM2.5 Prediksi Hari Ini",
+        operation_description="Mengembalikan data PM2.5 prediksi dari seluruh stasiun untuk tanggal hari ini.",
+        responses={
+            200: pm25DataSerializer(many=True),
+            404: openapi.Response(description="Tidak ada data PM2.5 untuk tanggal hari ini."),
+        }
+    )
+    def get(self, request):
+        today = date.today()
+        data_today = pm25DataPrediction.objects.select_related('station').filter(date=today)
+        if not data_today.exists():
+            return Response(
+                {"message": f"Tidak ada data PM2.5 untuk tanggal {today}."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = pm25DataSerializer(data_today, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PM25PredictionByDate(APIView):
+    @swagger_auto_schema(
+        operation_summary="Ambil Data PM2.5 Prediksi Berdasarkan Tanggal",
+        operation_description="Mengembalikan data PM2.5 prediksi berdasarkan tanggal yang diberikan dalam format YYYY-MM-DD.",
+        request_body=PM25DateInputSerializer,
+        responses={
+            200: pm25DataSerializer(many=True),
+            400: openapi.Response(description="Input tanggal tidak valid."),
+            404: openapi.Response(description="Tidak ada data PM2.5 untuk tanggal yang diminta."),
+        }
+    )
+    def post(self, request):
+        serializer = PM25DateInputSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        input_date = serializer.validated_data['date']
+        data = pm25DataPrediction.objects.select_related('station').filter(date=input_date)
+
+        if not data.exists():
+            return Response(
+                {"message": f"Tidak ada data PM2.5 untuk tanggal {input_date}."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
 
 class AddWeatherStations(APIView):
     def get(self, request, *args, **kwargs):

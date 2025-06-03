@@ -2,9 +2,9 @@ import requests
 from .models import WeatherData,WeatherStation
 from datetime import datetime, date, timedelta
 import logging
+import os
 
-
-API_KEY = "KTJ63YA3XS9PHPBWTWHKAR5D8"
+API_KEY = os.getenv("API_KEY")
 BASE_URL = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/"
 
 

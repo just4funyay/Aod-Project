@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#cd(y%t$igii_x2vbsdrf=h#kv*&e#r6l-tg+jqy13y98j9@4t'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ["*"]
 
@@ -85,9 +86,9 @@ WSGI_APPLICATION = 'Aod_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': 'aodproject',
-        'USER': 'aoduser',
-        'PASSWORD': 'tioninta',
+        'NAME': os.getenv("NAMEDB"),
+        'USER': os.getenv("USERDB"),
+        'PASSWORD': os.getenv("PASSDB"),
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }

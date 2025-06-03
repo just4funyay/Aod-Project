@@ -25,14 +25,11 @@ def predict_pm25_for_all_stations():
     from django.utils import timezone
     from sklearn.preprocessing import MinMaxScaler
     from tensorflow.keras.models import load_model
-    import os
-    import pandas as pd
 
     def find_nearest_point(lat_target, lon_target, latitudes, longitudes):
         points = np.array(list(zip(latitudes, longitudes)))
         target = np.array([lat_target, lon_target])
         distances = np.linalg.norm(points - target, axis=1)
-        print(distances)
         idx_min = distances.argmin()
         return idx_min
 
@@ -56,8 +53,6 @@ def predict_pm25_for_all_stations():
             latitudes = [entry['latitude'] for entry in aod.data]
             longitudes = [entry['longitude'] for entry in aod.data]
             values = [entry['aod_values'] for entry in aod.data]
-            print(latitudes)
-            print(longitudes)
 
             try:
                 idx_terdekat = find_nearest_point(lat, lon, latitudes, longitudes)
@@ -128,12 +123,11 @@ def predict_pm25_for_all_stations():
 
         print(f"Prediksi PM2.5 untuk stasiun {station.name}: {y_pred_real:.2f}")
 
-        # Simpan prediksi ke DB kalau perlu
-        # pm25DataPrediction.objects.update_or_create(
-        #     station=station,
-        #     date=yesterday,
-        #     defaults={'pm25_value': y_pred_real}
-        # )
+        pm25DataPrediction.objects.update_or_create(
+             station=station,
+             date=yesterday,
+             defaults={'pm25_value': y_pred_real}
+        )
 
 
 predict_pm25_for_all_stations()

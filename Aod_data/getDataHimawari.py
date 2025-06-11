@@ -31,7 +31,9 @@ def getDataHimawari():
             ftp.cwd(dirData)
             
         elif folder_daily in ftp.nlst():
-            ftp.cwd('/daily')
+            ftp.cwd('/')
+            dirData = f"pub/himawari/L3/ARP/031/{year}{month:02d}/daily"
+            ftp.cwd(dirData)
         
         files = sorted(ftp.mlsd())
         print(f"Isi folder {dirData}:")

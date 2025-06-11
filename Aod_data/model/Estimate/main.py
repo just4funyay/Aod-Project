@@ -6,7 +6,7 @@ import csv
 import math
 
 # Setup Django environment
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(_file_), "../../../"))
 sys.path.append(PROJECT_ROOT)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Aod_project.settings")
 django.setup()
@@ -124,11 +124,11 @@ def estimatePm25():
         jakarta_geojson = os.path.join(settings.BASE_DIR, 'id-jk.geojson')
         polygondata = csvToPolygon(df, jakarta_geojson)
 
-        #pm25data = pm25DataEstimate.objects.create(
-        #    aodid=rasterdata,
-        #    valuepm25=data,
-        #    time=rasterdata.time_retrieve
-        #)
+        pm25data = pm25DataEstimate.objects.create(
+            aodid=rasterdata,
+            valuepm25=data,
+            time=rasterdata.time_retrieve
+        )
 
         for _, row in polygondata.iterrows():
             geom = row.geometry

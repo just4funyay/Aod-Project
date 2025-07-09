@@ -5,8 +5,8 @@ import requests
 from Aod_data.utils import process_himawari_data
 
 def getDataHimawari():
-    ftpUser = "mahamaha_apps.ipb.ac.id"
-    ftpPassword = "SP+wari8"
+    ftpUser = os.getenv('USERHIMAWARI')
+    ftpPassword = os.getenv('PASSHIMAWARI')
     today = datetime.utcnow()
     year = today.year
     month = today.month

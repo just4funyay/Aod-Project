@@ -1,1 +1,4 @@
 .env
+Aod-data/model/Estimate/best_model.pkl
+Aod-data/aod-file/Himawari/*
+Aod-data/aod-file/VIIRS/*

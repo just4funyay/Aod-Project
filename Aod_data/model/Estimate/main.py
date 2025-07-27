@@ -6,7 +6,7 @@ import csv
 import math
 
 # Setup Django environment
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(_file_), "../../../"))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 sys.path.append(PROJECT_ROOT)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Aod_project.settings")
 django.setup()

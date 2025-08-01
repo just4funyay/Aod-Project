@@ -12,7 +12,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Aod_project.settings")
 django.setup()
 
 from .predict import predict_model
-from Aod_data.models import RasterData, pm25DataEstimate, PolygondataPM25
+from Aod_data.models import AerosolOpticalDepth, pm25DataEstimate, PolygondataPM25
 from Weather_data.models import WeatherData
 from django.contrib.gis.geos import GEOSGeometry
 from django.conf import settings
@@ -26,17 +26,16 @@ def euclidean_distance(lat1, lon1, lat2, lon2):
     return math.sqrt((lat1 - lat2) ** 2 + (lon1 - lon2) ** 2)
 
 def estimatePm25():
-    rasterdata_all = RasterData.objects.all()
+    rasterdata_all = AerosolOpticalDepth.objects.all()
 
     for rasterdata in rasterdata_all:
         aod_value = rasterdata.data
-        aod_date = rasterdata.time_retrieve
+        aod_date = rasterdata.date
 
         if pm25DataEstimate.objects.filter(aodid=rasterdata).exists():
             print(f"[SKIP] Data PM2.5 untuk RasterData ID {rasterdata.id} sudah ada.")
             continue
 
-        # Ambil semua data WeatherData beserta lokasi stasiun untuk tanggal yang sama
         all_weather = WeatherData.objects.filter(date=aod_date).select_related('station')
         if not all_weather.exists():
             print(f"[WARNING] Tidak ada data cuaca untuk tanggal {aod_date}, lewati ID {rasterdata.id}.")
@@ -127,7 +126,7 @@ def estimatePm25():
         pm25data = pm25DataEstimate.objects.create(
             aodid=rasterdata,
             valuepm25=data,
-            time=rasterdata.time_retrieve
+            date=rasterdata.date
         )
 
         for _, row in polygondata.iterrows():
@@ -139,7 +138,7 @@ def estimatePm25():
                         pm25id=pm25data,
                         geom=polygon,
                         pm25_value=row['pm25'],
-                        date=pm25data.time
+                        date=pm25data.date
                     )
             else:
                 polygon = GEOSGeometry(geom.wkt, srid=4326)
@@ -147,7 +146,7 @@ def estimatePm25():
                     pm25id=pm25data,
                     geom=polygon,
                     pm25_value=row['pm25'],
-                    date=pm25data.time
+                    date=pm25data.date
                 )
 
         print(f"[SUCCESS] Prediksi PM2.5 untuk ID {rasterdata.id} disimpan ke database.\n")
@@ -158,6 +157,3 @@ def estimatePm25():
             print(f"File {file_name} berhasil dihapus.")
         else:
             print(f"File {file_name} tidak ditemukan.")
-
-
-estimatePm25()

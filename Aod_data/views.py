@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Polygondata,PolygondataPM25
+from .models import AerosolOpticalDepthPolygon,PolygondataPM25
 from django.core.serializers import serialize
 import json
 from datetime import datetime
@@ -17,7 +17,7 @@ class GetDataPolygon(APIView):
     def get(self, request):
         try:
             yesterday = date.today() - timedelta(days=1)
-            polygons = Polygondata.objects.filter(date=yesterday)
+            polygons = AerosolOpticalDepthPolygon.objects.filter(date=yesterday)
             if not polygons.exists():
                 return Response(
                     {"message": "Tidak ada data polygon untuk tanggal kemarin."},
@@ -43,7 +43,7 @@ class PolygonByDateAPIView(APIView):
         serializer = DateInputSerializer(data=request.data)
         if serializer.is_valid():
             tanggal = serializer.validated_data['tanggal']
-            polygons = Polygondata.objects.filter(date=tanggal)
+            polygons = AerosolOpticalDepthPolygon.objects.filter(date=tanggal)
             if not polygons.exists():
                 return Response(
                     {"message": "Tidak ada data polygon untuk tanggal tersebut."},

@@ -1,5 +1,5 @@
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from .models import Polygondata,PolygondataPM25
+from .models import AerosolOpticalDepthPolygon,PolygondataPM25
 from rest_framework import serializers
 
 
@@ -8,7 +8,7 @@ class DateInputSerializer(serializers.Serializer):
 
 class PolygondataSerializer(GeoFeatureModelSerializer):
     class Meta:
-        model = Polygondata
+        model = AerosolOpticalDepthPolygon
         geo_field = "geom"
         fields = ["aod_value"]
 

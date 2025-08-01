@@ -15,7 +15,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Aod_project.settings")
 django.setup()
 
 # Import Django models
-from Aod_data.models import RasterData
+from Aod_data.models import AerosolOpticalDepth
 from Weather_data.models import WeatherData, pm25DataActual, WeatherStation, pm25DataPrediction
 
 
@@ -44,7 +44,7 @@ def predict_pm25_for_all_stations():
     for station in stations:
         print(f"Memproses stasiun: {station.name} (ID: {station.id})")
         lon, lat = station.location.x, station.location.y
-        aod_all = RasterData.objects.filter(time_retrieve__range=(start_date, yesterday)).order_by("time_retrieve")
+        aod_all = AerosolOpticalDepth.objects.filter(date__range=(start_date, yesterday)).order_by("date")
         weather_all = WeatherData.objects.filter(date__range=(start_date, yesterday), station=station)
         pm25_all = pm25DataActual.objects.filter(date__range=(start_date, yesterday), station=station)
         records = []

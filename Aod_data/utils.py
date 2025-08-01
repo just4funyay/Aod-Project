@@ -19,7 +19,7 @@ from django.contrib.gis.geos import GEOSGeometry
 from rest_framework.response import Response
 from rest_framework import status
 
-from Aod_data.models import Sattellite, RasterData, Polygondata
+from Aod_data.models import Satellite, AerosolOpticalDepth, AerosolOpticalDepthPolygon
 
 
 def convert_to_geoTiFF_input_data(nc_file_path, geotiff_file_path, geojson_filepath):
@@ -64,8 +64,8 @@ def convert_to_geoTiFF_input_data(nc_file_path, geotiff_file_path, geojson_filep
     elif folder_name == 'Himawari':
         # Subset data Jakarta
         # Batas wilayah Jakarta
-        lat_min, lat_max = -6.5, -6.08
-        lon_min, lon_max = 106.6, 107.0
+        lat_min, lat_max = -6.35, -6.08
+        lon_min, lon_max = 106.7, 106.95
         ds_subset = ds.sel(
             latitude=slice(lat_max, lat_min),
             longitude=slice(lon_min, lon_max)
@@ -78,6 +78,7 @@ def convert_to_geoTiFF_input_data(nc_file_path, geotiff_file_path, geojson_filep
         latitude = ds_subset['latitude'].values
         longitude = ds_subset['longitude'].values
         aod_vals = aod.values
+        
 
         jakarta = gpd.read_file(geojson_filepath).to_crs("EPSG:4326")
 
@@ -128,7 +129,7 @@ def process_himawari_data():
     errors = []
 
     try:
-        sattellite, _ = Sattellite.objects.get_or_create(sattelite_name='Himawari')
+        sattellite, _ = Satellite.objects.get_or_create(satellite_name='Himawari')
 
         for nc_file_name in os.listdir(base_nc_folder_path):
             if nc_file_name.endswith('.nc'):
@@ -155,10 +156,10 @@ def process_himawari_data():
                                 "aod_values": aod_value
                             })
                     print(dataraster)
-                    raster_data = RasterData.objects.create(
-                        sattellite=sattellite,
+                    raster_data = AerosolOpticalDepth.objects.create(
+                        satellite=sattellite,
                         data=dataraster,
-                        time_retrieve=file_date,
+                        date=file_date,
                     )
 
                     for _, row in clipped_gdf.iterrows():
@@ -167,20 +168,20 @@ def process_himawari_data():
                             for poly in geom.geoms:
                                 polygon = GEOSGeometry(poly.wkt, srid=4326)
                                 
-                                Polygondata.objects.create(
+                                AerosolOpticalDepthPolygon.objects.create(
                                     aodid=raster_data,
                                     geom=polygon,
                                     aod_value=row['aod'],
-                                    date=raster_data.time_retrieve
+                                    date=raster_data.date
                                 )
                         else:
                             polygon = GEOSGeometry(geom.wkt, srid=4326)
                             
-                            Polygondata.objects.create(
+                            AerosolOpticalDepthPolygon.objects.create(
                                 aodid=raster_data,
                                 geom=polygon,
                                 aod_value=row['aod'],
-                                date=raster_data.time_retrieve
+                                date=raster_data.date
                             )
 
                     if os.path.exists(geotiff_file_path):
@@ -226,7 +227,7 @@ def process_viirs_files():
     errors = []
 
     try:
-        sattellite, _ = Sattellite.objects.get_or_create(sattelite_name='VIIRS')
+        sattellite, _ = Satellite.objects.get_or_create(sattelite_name='VIIRS')
 
         for nc_file_name in os.listdir(base_nc_folder_path):
             if nc_file_name.endswith('.nc'):
@@ -254,10 +255,10 @@ def process_viirs_files():
                                 "aod_values": aod_value
                             })
 
-                    raster_data = RasterData(
-                        sattellite=sattellite,
+                    raster_data = AerosolOpticalDepth(
+                        satellite=sattellite,
                         data=dataraster,
-                        time_retrieve=today
+                        date=today
                     )
                     raster_data.save()
 
